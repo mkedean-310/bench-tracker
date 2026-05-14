@@ -567,4 +567,58 @@ l<!DOCTYPE html>
         data: {
           labels: labels.length ? labels : ["W1A","W1B","W1C"],
           datasets: [{
-         
+            label: "Top-Set Reps",
+            data: dataPoints.length ? dataPoints : [0, 0, 0],
+            borderColor: "#4da3ff",
+            backgroundColor: "rgba(77,163,255,0.08)",
+            tension: 0.3,
+            borderWidth: 3,
+            pointRadius: 5,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: (ctx) => {
+                  const w = weights[ctx.dataIndex] || "?";
+                  return `${ctx.raw} reps @ ${w} lb`;
+                }
+              }
+            }
+          },
+          scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
+      });
+    }
+
+    // ── TAB SWITCHING ─────────────────────────────────────────────────────────
+    document.querySelectorAll(".tab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+        tab.classList.add("active");
+        document.querySelectorAll(".tab-content").forEach(c => c.style.display = "none");
+        document.getElementById(tab.dataset.tab + "Tab").style.display = "block";
+        if (tab.dataset.tab === "history") renderHistory();
+        if (tab.dataset.tab === "chart")   renderChart();
+      });
+    });
+
+    // ── EVENT BINDINGS ────────────────────────────────────────────────────────
+    document.getElementById("loadBtn").onclick      = loadSession;
+    document.getElementById("newSessionBtn").onclick = () => {
+      document.getElementById("notes").value = "";
+      loadSession();
+    };
+    document.getElementById("saveBtn").onclick  = saveSession;
+    document.getElementById("resetBtn").onclick = resetSession;
+    weekSelect.onchange = loadSession;
+    daySelect.onchange  = loadSession;
+
+    // ── INIT ──────────────────────────────────────────────────────────────────
+    loadSession();
+  </script>
+</body>
+</html>
