@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Lift Tracker Pro</title>
+  
+  <link rel="manifest" href="data:application/manifest+json,{
+    &quot;name&quot;:&quot;Lift Tracker Pro&quot;,
+    &quot;short_name&quot;:&quot;LiftTracker&quot;,
+    &quot;start_url&quot;:&quot;.&quot;,
+    &quot;display&quot;:&quot;standalone&quot;,
+    &quot;background_color&quot;:&quot;#0b1220&quot;,
+    &quot;theme_color&quot;:&quot;#4da3ff&quot;,
+    &quot;icons&quot;:[{&quot;src&quot;:&quot;https://via.placeholder.com/192x192/111a2e/4da3ff?text=🏋️‍♂️&quot;,&quot;sizes&quot;:&quot;192x192&quot;,&quot;type&quot;:&quot;image/png&quot;}]}" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+
+  <style>
+    :root{
+      --bg:#0b1220;
+      --card:#111a2e;
+      --muted:#9fb0d0;
+      --text:#e8eefc;
+      --accent:#4da3ff;
+      --border: rgba(255,255,255,0.10);
+      --radius: 14px;
+    }
+    body{
+      margin:0; padding:16px;
+      background: var(--bg);
+      color:var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    .wrap{ max-width: 720px; margin: 0 auto; }
+    h1{ font-size: 22px; margin:0 0 4px; color: #fff; text-align: center;}
+    .sub{ color: var(--muted); font-size: 13px; text-align: center; margin-bottom: 20px; }
+
+    .tabs{
+      display:flex; gap:8px; margin-bottom:16px;
+      border-bottom:1px solid var(--border);
+    }
+    .tab{
+      padding:12px 24px;
+      cursor:pointer;
+      font-weight:600;
+      color: var(--muted);
+      transition: all 0.2s ease;
+    }
+    .tab.active{
+      color: var(--accent);
+      border-bottom:3px solid var(--accent);
+    }
+
+    .card{
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom:12px;
+    }
+    .row{ display:flex; gap:12px; align-items:center; justify-content:space-between; }
+    .small{ font-size:12px; color:var(--muted); font-weight: 500; }
+
+    select, input, button, textarea{ font:inherit; box-sizing: border-box; }
+    select, input[type="number"], textarea{
+      background:rgba(0,0,0,0.4);
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:12px;
+      width:100%;
+    }
+    button{
+      border:1px solid rgba(77,163,255,0.3);
+      background:rgba(77,163,255,0.12);
+      color:var(--text);
+      border-radius:12px;
+      padding:14px;
+      cursor:pointer;
+      font-weight:600;
+      width: 100%;
+    }
+    .btn-primary{ background: var(--accent); color: #071026; border: none; font-weight:700; }
+
+    .sets{ margin-top:12px; display:flex; flex-direction:column; gap:12px; }
+    .set{
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:14px;
+      background:rgba(255,255,255,0.01);
+    }
+    .checks{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+      margin-top:12px;
+    }
+    label.chk{
+      display:flex; gap:8px; align-items:center;
+      padding:10px 12px; border-radius:10px;
+      border:1px solid rgba(255,255,255,0.07);
+      background:rgba(255,255,255,0.02);
+      cursor:pointer;
+    }
+    .chk.done{ border-color: #2dd4bf; background:rgba(45,212,191,0.12); }
+    input[type="checkbox"]{ accent-color:var(--accent); width:22px; height:22px; }
+    textarea{ min-height:80px; resize:vertical; }
+    
+    .kpi{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:10px;
+      margin:16px 0 4px 0;
+    }
+    .kpi .box{
+      text-align:center;
+      background:rgba(0,0,0,0.25);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:12px 6px;
+    }
+    .kpi .num{ font-size:22px; font-weight:800; color: var(--accent); }
+
+    .history-item {
+      padding: 14px;
+      background: rgba(255,255,255,0.02);
+      border-radius: 12px;
+      margin-bottom: 10px;
+      border: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Lift Tracker Pro</h1>
+    <div class="sub">Local Auto-Save • 8-Week Blueprint</div>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="tracker">Tracker</div>
+      <div class="tab" data-tab="history">History</div>
+    </div>
+
+    <div id="trackerTab" class="tab-content">
+      <div class="card">
+        <div class="row">
+          <div style="flex:2;"><div class="small" style="margin-bottom:6px;">Exercise</div>
+            <select id="exerciseSelect">
+              <option value="bench">DB Bench</option>
+              <option value="press">Shoulder Press</option>
+            </select>
+          </div>
+          <div style="flex:1;"><div class="small" style="margin-bottom:6px;">Week</div><select id="weekSelect"></select></div>
+          <div style="flex:1;"><div class="small" style="margin-bottom:6px;">Day</div>
+            <select id="daySelect"><option>A</option><option>B</option><option>C</option></select>
+          </div>
+        </div>
+        
+        <div class="kpi">
+          <div class="box"><div class="num" id="kpiDone">0</div><div class="small">Done</div></div>
+          <div class="box"><div class="num" id="kpiTotal">0</div><div class="small">Total Sets</div></div>
+          <div class="box"><div class="num" id="kpiVolume">0</div><div class="small">Volume (lbs)</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div id="sessionTitle" style="font-weight:800; font-size:17px; color: #fff;">Loading...</div>
+        <div class="sets" id="setsContainer"></div>
+        <div style="margin:16px 0 6px;" class="small">Notes</div>
+        <textarea id="notes" placeholder="How did the weight feel? Clean reps? Note it here..."></textarea>
+        <div style="height:16px"></div>
+        <button class="btn-primary" id="saveBtn">💾 Save Workout</button>
+      </div>
+    </div>
+
+    <div id="historyTab" class="tab-content" style="display:none;">
+      <div class="card">
+        <h3 style="margin:0 0 14px 0;">Workout Log History</h3>
+        <div id="historyList"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_PREFIX = "lift_tracker_v4_";
+
+    // Complete 8-Week Database Map for both DB Bench and Shoulder Press
+    const workoutPlans = {
+      bench: {
+        1: {A:[{w:80,r:"6-8"},{w:85,r:"6-8"},{w:90,r:"6-8"},{w:80,r:"10-12"}],B:[{w:80,r:"6-8"},{w:85,r:"6-8"},{w:90,r:"6-8"},{w:85,r:"10-12"}],C:[{w:85,r:"6-8"},{w:90,r:"6-8"},{w:95,r:"5-7"},{w:85,r:"10-12"}]},
+        2: {A:[{w:80,r:"6-8"},{w:85,r:"6-8"},{w:90,r:"6-8"},{w:80,r:"10-12"}],B:[{w:80,r:"6-8"},{w:85,r:"6-8"},{w:90,r:"6-8"},{w:85,r:"10-12"}],C:[{w:85,r:"6-8"},{w:90,r:"6-8"},{w:95,r:"5-7"},{w:85,r:"10-12"}]},
+        3: {A:[{w:85,r:"6-8"},{w:90,r:"6-8"},{w:90,r:"6-8"},{w:80,r:"10-12"}],B:[{w:85,r:"6-8"},{w:90,r:"6-8"},{w:95,r:"6"},{w:85,r:"10-12"}],C:[{w:85,r:"6-8"},{w:90,r:"6-8"},{w:95,r:"6-8"},{w:85,r:"10-12"}]},
+        4: {A:[{w:85,r:"6-8"},{w:90,r:"6-8"},{w:95,r:"6"},{w:80,r:"12"}],B:[{w:85,r:"6-8"},{w:90,r:"6-8"},{w:95,r:"6-8"}],C:[{w:90,r:"5"},{w:95,r:"5"},{w:100,r:"2-3"}]},
+        5: {A:[{w:85,r:"6"},{w:90,r:"6"},{w:95,r:"5"}],B:[{w:85,r:"6-8"},{w:90,r:"6-8"},{w:95,r:"6"}],C:[{w:90,r:"6"},{w:95,r:"5"},{w:100,r:"3"}]},
+        6: {A:[{w:90,r:"5"},{w:95,r:"5"},{w:100,r:"3-4"}],B:[{w:85,r:"6-8"},{w:90,r:"6-8"},{w:95,r:"6-8"}],C:[{w:90,r:"6"},{w:100,r:"3-4"}]},
+        7: {A:[{w:85,r:"6-8"},{w:90,r:"6-8"},{w:95,r:"5-6"},{w:100,r:"2-3"}],B:[{w:90,r:"6-8"},{w:95,r:"5-7"}],C:[{w:85,r:"6-8"},{w:90,r:"6-8"},{w:100,r:"3"}]},
+        8: {A:[{w:85,r:"6-8"},{w:90,r:"6-8"},{w:95,r:"5-6"},{w:100,r:"4-5"}],B:[{w:90,r:"6-8"},{w:95,r:"6-7"}],C:[{w:85,r:"6-8"},{w:90,r:"6-8"},{w:100,r:"4-5"}]}
+      },
+      press: {
+        1: {A:[{w:50,r:"6-8"},{w:55,r:"6-8"},{w:60,r:"6-8"}],B:[{w:50,r:"6-8"},{w:55,r:"6-8"},{w:60,r:"6-8"}],C:[{w:55,r:"6-8"},{w:60,r:"6-8"},{w:65,r:"5-7"}]},
+        2: {A:[{w:50,r:"6-8"},{w:55,r:"6-8"},{w:60,r:"6-8"}],B:[{w:50,r:"6-8"},{w:55,r:"6-8"},{w:60,r:"6-8"}],C:[{w:55,r:"6-8"},{w:60,r:"6-8"},{w:65,r:"5-7"}]},
+        3: {A:[{w:55,r:"6-8"},{w:60,r:"6-8"},{w:65,r:"6-8"}],B:[{w:55,r:"6-8"},{w:60,r:"6-8"},{w:65,r:"6-8"}],C:[{w:60,r:"6-8"},{w:65,r:"6-8"},{w:70,r:"5-6"}]},
+        4: {A:[{w:55,r:"6-8"},{w:60,r:"6-8"},{w:65,r:"6-8"}],B:[{w:60,r:"6-8"},{w:65,r:"6-8"},{w:70,r:"5"}],C:[{w:60,r:"6-8"},{w:65,r:"6-8"},{w:70,r:"5-6"}]},
+        5: {A:[{w:60,r:"6"},{w:65,r:"6"},{w:70,r:"5"}],B:[{w:60,r:"6"},{w:65,r:"6"},{w:70,r:"5"}],C:[{w:65,r:"6"},{w:70,r:"5"},{w:75,r:"4"}]},
+        6: {A:[{w:60,r:"6"},{w:65,r:"6"},{w:70,r:"5"}],B:[{w:65,r:"6"},{w:70,r:"5"},{w:75,r:"4"}],C:[{w:65,r:"6"},{w:70,r:"5"},{w:75,r:"4-5"}]},
+        7: {A:[{w:65,r:"6"},{w:70,r:"5"},{w:75,r:"4-5"}],B:[{w:65,r:"6"},{w:70,r:"5"},{w:75,r:"4-5"}],C:[{w:70,r:"5"},{w:75,r:"4"},{w:80,r:"2-3"}]},
+        8: {A:[{w:70,r:"5"},{w:75,r:"4"},{w:80,r:"3-4"}],B:[{w:70,r:"5"},{w:75,r:"4"},{w:80,r:"3-4"}],C:[{w:70,r:"5"},{w:75,r:"4"},{w:80,r:"4-5"}]}
+      }
+    };
+
+    const exSel = document.getElementById("exerciseSelect");
+    const weekSel = document.getElementById("weekSelect");
+    const daySel = document.getElementById("daySelect");
+
+    // Build Week Options dynamically
+    for(let i=1; i<=8; i++) {
+      let opt = document.createElement("option");
+      opt.value = i; opt.textContent = "Week " + i;
+      weekSel.appendChild(opt);
+    }
+
+    // Creates unique storage namespace so items never cross-overwrite
+    function getSessionKey() {
+      return STORAGE_PREFIX + exSel.value + "_w" + weekSel.value + "_d" + daySel.value;
+    }
+
+    function updateKPIs() {
+      const checks = document.querySelectorAll(".done-check");
+      const reps = document.querySelectorAll(".reps-input");
+      let done = 0, vol = 0;
+
+      checks.forEach((c, i) => {
+        if(c.checked) {
+          done++;
+          const weight = parseInt(document.querySelectorAll(".set-w")[i].textContent) || 0;
+          const rCount = parseInt(reps[i].value) || 0;
+          vol += (weight * rCount);
+        }
+      });
+      document.getElementById("kpiDone").textContent = done;
+      document.getElementById("kpiTotal").textContent = checks.length;
+      document.getElementById("kpiVolume").textContent = vol;
+    }
+
+    function loadSession() {
+      const ex = exSel.value;
+      const wk = weekSel.value;
+      const dy = daySel.value;
+      
+      const exName = exSel.options[exSel.selectedIndex].text;
+      document.getElementById("sessionTitle").textContent = exName + " — Week " + wk + " (Day " + dy + ")";
+
+      const sets = (workoutPlans[ex] && workoutPlans[ex][wk] && workoutPlans[ex][wk][dy]) ? workoutPlans[ex][wk][dy] : [];
+      const cont = document.getElementById("setsContainer");
+      cont.innerHTML = "";
+      
+      sets.forEach((s, i) => {
+        const div = document.createElement("div");
+        div.className = "set";
+        div.innerHTML = `
+          <div class="row"><strong>Set ${i+1}: <span class="set-w">${s.w}</span> lbs</strong> <span class="small">Target: ${s.r} reps</span></div>
+          <div class="checks">
+            <label class="chk"><input type="checkbox" class="done-check"> Done</label>
+            <input type="number" class="reps-input" placeholder="Reps Hit">
+          </div>`;
+        
+        const chk = div.querySelector(".done-check");
+        chk.addEventListener("change", () => {
+          if(chk.checked) chk.parentElement.classList.add("done");
+          else chk.parentElement.classList.remove("done");
+          updateKPIs();
+        });
+        div.querySelector(".reps-input").addEventListener("input", updateKPIs);
+        cont.appendChild(div);
+      });
+
+      // Load Saved State
+      const saved = localStorage.getItem(getSessionKey());
+      if(saved) {
+        const d = JSON.parse(saved);
+        document.querySelectorAll(".done-check").forEach((c, i) => {
+          c.checked = d.done[i] || false;
+          if(c.checked) c.parentElement.classList.add("done");
+        });
+        document.querySelectorAll(".reps-input").forEach((r, i) => r.value = d.reps[i] || "");
+        document.getElementById("notes").value = d.notes || "";
+      } else {
+        document.getElementById("notes").value = "";
+      }
+      updateKPIs();
+    }
+
+    document.getElementById("saveBtn").onclick = () => {
+      const data = {
+        done: Array.from(document.querySelectorAll(".done-check")).map(c => c.checked),
+        reps: Array.from(document.querySelectorAll(".reps-input")).map(r => r.value),
+        notes: document.getElementById("notes").value,
+        date: new Date().toLocaleDateString(),
+        exName: exSel.options[exSel.selectedIndex].text,
+        label: "W" + weekSel.value + "D" + daySel.value
+      };
+      localStorage.setItem(getSessionKey(), JSON.stringify(data));
+      alert("🏋️‍♂️ Workout Saved Successfully!");
+      renderHistory();
+    };
+
+    function renderHistory() {
+      const list = document.getElementById("historyList");
+      list.innerHTML = "";
+      let logs = [];
+
+      for(let i=0; i<localStorage.length; i++){
+        const k = localStorage.key(i);
+        if(k.startsWith(STORAGE_PREFIX)){
+          logs.push(JSON.parse(localStorage.getItem(k)));
+        }
+      }
+
+      if(logs.length === 0) {
+        list.innerHTML = `<p style="color:var(--muted); text-align:center; padding:20px;">No workout logs found yet.</p>`;
+        return;
+      }
+
+      // Display logs
+      logs.forEach(d => {
+        const item = document.createElement("div");
+        item.className = "history-item";
+        item.innerHTML = `
+          <div class="row"><strong>${d.exName} (${d.label})</strong> <span class="small">${d.date}</span></div>
+          <div style="margin-top: 4px;" class="small">${d.notes ? 'Notes: ' + d.notes : 'No extra notes.'}</div>
+        `;
+        list.appendChild(item);
+      });
+    }
+
+    // Tab Interface Layout
+    document.querySelectorAll(".tab").forEach(t => {
+      t.onclick = () => {
+        document.querySelectorAll(".tab").forEach(el => el.classList.remove("active"));
+        document.querySelectorAll(".tab-content").forEach(el => el.style.display = "none");
+        t.classList.add("active");
+        document.getElementById(t.dataset.tab + "Tab").style.display = "block";
+        if(t.dataset.tab === "history") renderHistory();
+      };
+    });
+
+    exSel.onchange = loadSession;
+    weekSel.onchange = loadSession;
+    daySel.onchange = loadSession;
+    
+    // Boot Initialization
+    loadSession();
+  </script>
+</body>
+</html>
