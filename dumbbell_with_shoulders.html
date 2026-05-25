@@ -1,0 +1,657 @@
+l<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DB Bench Tracker</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+
+  <style>
+    :root{
+      --bg:#0b1220;
+      --card:#111a2e;
+      --muted:#9fb0d0;
+      --text:#e8eefc;
+      --accent:#4da3ff;
+      --border: rgba(255,255,255,0.10);
+      --radius: 14px;
+    }
+    body{
+      margin:0; padding:16px;
+      background: linear-gradient(180deg, #071026 0%, var(--bg) 100%);
+      color:var(--text);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    }
+    .wrap{ max-width: 720px; margin: 0 auto; }
+    h1{ font-size: 19px; margin:0 0 8px; }
+    .sub{ color: var(--muted); font-size: 13.5px; margin-bottom: 16px; }
+
+    .tabs{
+      display:flex; gap:8px; margin-bottom:16px;
+      border-bottom:1px solid var(--border);
+    }
+    .tab{
+      padding:10px 20px;
+      border-radius:12px 12px 0 0;
+      background:rgba(255,255,255,0.03);
+      cursor:pointer;
+      font-weight:600;
+    }
+    .tab.active{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-bottom:2px solid var(--accent);
+    }
+
+    .card{
+      background: rgba(17,26,46,0.95);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom:12px;
+    }
+    .row{ display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; }
+    .small{ font-size:12px; color:var(--muted); }
+
+    select, input, button{ font:inherit; }
+    select, input[type="text"]{
+      background:rgba(0,0,0,0.3);
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:10px 12px;
+      width:100%;
+    }
+    button{
+      border:1px solid var(--border);
+      background:rgba(77,163,255,0.12);
+      color:var(--text);
+      border-radius:12px;
+      padding:11px 16px;
+      cursor:pointer;
+    }
+    .btn-primary{ background:linear-gradient(180deg, rgba(77,163,255,0.28), rgba(77,163,255,0.12)); border-color:rgba(77,163,255,0.45); font-weight:600; }
+    .btn-danger{ background:rgba(251,113,133,0.15); border-color:rgba(251,113,133,0.45); }
+
+    .sets{ margin-top:12px; display:flex; flex-direction:column; gap:12px; }
+    .set{
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:14px;
+      background:rgba(0,0,0,0.2);
+    }
+    .set-head{ display:flex; justify-content:space-between; align-items:start; }
+    .set-title{ font-weight:650; font-size:15px; }
+    .checks{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+      margin-top:12px;
+    }
+    label.chk{
+      display:flex; gap:8px; align-items:center;
+      padding:10px 12px; border-radius:10px;
+      border:1px solid rgba(255,255,255,0.07);
+      background:rgba(255,255,255,0.02);
+      cursor:pointer;
+    }
+    .chk.done{ border-color:rgba(45,212,191,0.6); background:rgba(45,212,191,0.15); }
+    input[type="checkbox"]{ accent-color:var(--accent); width:20px; height:20px; }
+    .textarea{
+      width:100%; min-height:90px; resize:vertical;
+      background:rgba(0,0,0,0.3); color:var(--text);
+      border:1px solid var(--border); border-radius:12px;
+      padding:12px; box-sizing:border-box;
+    }
+    .kpi{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:10px;
+      margin:12px 0;
+    }
+    .kpi .box{
+      text-align:center;
+      background:rgba(0,0,0,0.2);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:12px 8px;
+    }
+    .kpi .num{ font-size:21px; font-weight:800; }
+    .kpi .lab{ font-size:12px; color:var(--muted); }
+
+    .history-item {
+      padding: 12px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 12px;
+      margin-bottom: 10px;
+      border: 1px solid var(--border);
+    }
+    canvas{ max-width:100%; height:340px !important; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>DB Bench Tracker — 8 Week Plan</h1>
+    <div class="sub">All data saved locally • Works offline</div>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="tracker">Tracker</div>
+      <div class="tab" data-tab="history">History</div>
+      <div class="tab" data-tab="chart">Progress</div>
+    </div>
+
+    <div id="trackerTab" class="tab-content">
+      <div class="card">
+        <div class="row">
+          <div class="pill">💾 Local Only</div>
+          <div class="small">Exercise • Week + Day</div>
+        </div>
+        <div style="height:12px"></div>
+        <div class="row" style="gap:12px;">
+          <div style="flex:1;">
+            <div class="small" style="margin-bottom:6px;">Exercise</div>
+            <select id="exerciseSelect">
+              <option value="bench">Bench</option>
+              <option value="shoulder">Shoulders</option>
+            </select>
+          </div>
+          <div style="flex:1;"><div class="small" style="margin-bottom:6px;">Week</div><select id="weekSelect"></select></div>
+          <div style="flex:1;"><div class="small" style="margin-bottom:6px;">Day</div>
+            <select id="daySelect">
+              <option value="A">A</option>
+              <option value="B">B</option>
+              <option value="C">C</option>
+            </select>
+          </div>
+        </div>
+        <div style="height:12px"></div>
+        <div class="row">
+          <button class="btn-primary" id="loadBtn">Load Session</button>
+          <button id="newSessionBtn">New Session</button>
+        </div>
+        <div class="kpi">
+          <div class="box"><div class="num" id="kpiDone">0</div><div class="lab">Done</div></div>
+          <div class="box"><div class="num" id="kpiTotal">0</div><div class="lab">Total</div></div>
+          <div class="box"><div class="num" id="kpiVolume">0</div><div class="lab">Volume</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="row">
+          <div id="sessionTitle" style="font-weight:800; font-size:16.5px;">Week ? - Day ?</div>
+          <div class="small" id="sessionIdLabel"></div>
+        </div>
+        <div class="sets" id="setsContainer"></div>
+        <div style="margin:16px 0 6px;" class="small">Notes</div>
+        <textarea id="notes" class="textarea" placeholder="95×6 clean. 100×4 felt strong."></textarea>
+        <div style="height:12px"></div>
+        <div class="row">
+          <button class="btn-primary" id="saveBtn">💾 Save Session</button>
+          <button class="btn-danger" id="resetBtn">Reset Session</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="historyTab" class="tab-content" style="display:none;">
+      <div class="card">
+        <h2 style="margin:0 0 12px 0;">Session History</h2>
+        <div id="historyList"></div>
+      </div>
+    </div>
+
+    <div id="chartTab" class="tab-content" style="display:none;">
+      <div class="card">
+        <h2 style="margin:0 0 12px 0;">100 lb Progress Over Time</h2>
+        <canvas id="progressChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script>
+    // ── COMPLETE 8-WEEK PLAN ──────────────────────────────────────────────────
+    const plan = {
+      1: {
+        A: [
+          {ex:"DB Bench", w:80,  reps:"6-8"},
+          {ex:"DB Bench", w:85,  reps:"6-8"},
+          {ex:"DB Bench", w:90,  reps:"6-8"},
+          {ex:"Back-off", w:80,  reps:"10-12"}
+        ],
+        B: [
+          {ex:"DB Bench", w:80,  reps:"6-8"},
+          {ex:"DB Bench", w:85,  reps:"6-8"},
+          {ex:"DB Bench", w:90,  reps:"6-8"},
+          {ex:"Back-off", w:85,  reps:"10-12"}
+        ],
+        C: [
+          {ex:"DB Bench", w:85,  reps:"6-8"},
+          {ex:"DB Bench", w:90,  reps:"6-8"},
+          {ex:"DB Bench", w:95,  reps:"5-7"},
+          {ex:"Back-off", w:85,  reps:"10-12"}
+        ]
+      },
+      2: {
+        A: [
+          {ex:"DB Bench", w:80,  reps:"6-8"},
+          {ex:"DB Bench", w:85,  reps:"6-8"},
+          {ex:"DB Bench", w:90,  reps:"6-8"},
+          {ex:"DB Bench", w:95,  reps:"3-5"},
+          {ex:"Back-off", w:80,  reps:"10-12"}
+        ],
+        B: [
+          {ex:"DB Bench", w:80,  reps:"6-8"},
+          {ex:"DB Bench", w:85,  reps:"6-8"},
+          {ex:"DB Bench", w:90,  reps:"6-8"},
+          {ex:"Back-off", w:80,  reps:"10-12"}
+        ],
+        C: [
+          {ex:"DB Bench", w:85,  reps:"6-8"},
+          {ex:"DB Bench", w:90,  reps:"6-8"},
+          {ex:"DB Bench", w:95,  reps:"5-7"},
+          {ex:"Back-off", w:85,  reps:"10-12"}
+        ]
+      },
+      3: {
+        A: [
+          {ex:"DB Bench", w:85,  reps:"6-8"},
+          {ex:"DB Bench", w:90,  reps:"6-8"},
+          {ex:"DB Bench", w:95,  reps:"5-7"},
+          {ex:"Back-off", w:80,  reps:"10-12"}
+        ],
+        B: [
+          {ex:"DB Bench", w:80,  reps:"6-8"},
+          {ex:"DB Bench", w:85,  reps:"6-8"},
+          {ex:"DB Bench", w:90,  reps:"6-8"},
+          {ex:"DB Bench", w:95,  reps:"4-6"},
+          {ex:"Back-off", w:80,  reps:"10-12"}
+        ],
+        C: [
+          {ex:"DB Bench", w:85,  reps:"6-8"},
+          {ex:"DB Bench", w:90,  reps:"6-8"},
+          {ex:"DB Bench", w:95,  reps:"5-7"},
+          {ex:"Back-off", w:85,  reps:"10-12"}
+        ]
+      },
+      4: {
+        A: [
+          {ex:"DB Bench", w:75,  reps:"8-10"},
+          {ex:"DB Bench", w:80,  reps:"8-10"},
+          {ex:"DB Bench", w:85,  reps:"8-10"},
+          {ex:"Back-off", w:75,  reps:"12"}
+        ],
+        B: [
+          {ex:"DB Bench", w:75,  reps:"8-10"},
+          {ex:"DB Bench", w:80,  reps:"8-10"},
+          {ex:"Back-off", w:75,  reps:"12"}
+        ],
+        C: [
+          {ex:"DB Bench", w:80,  reps:"8-10"},
+          {ex:"DB Bench", w:85,  reps:"8-10"},
+          {ex:"Back-off", w:75,  reps:"12"}
+        ]
+      },
+      5: {
+        A: [
+          {ex:"DB Bench", w:85,  reps:"6-8"},
+          {ex:"DB Bench", w:90,  reps:"6-8"},
+          {ex:"DB Bench", w:95,  reps:"5-7"},
+          {ex:"DB Bench", w:100, reps:"1-2"},
+          {ex:"Back-off", w:85,  reps:"10-12"}
+        ],
+        B: [
+          {ex:"DB Bench", w:85,  reps:"6-8"},
+          {ex:"DB Bench", w:90,  reps:"6-8"},
+          {ex:"DB Bench", w:95,  reps:"5-7"},
+          {ex:"Back-off", w:80,  reps:"10-12"}
+        ],
+        C: [
+          {ex:"DB Bench", w:85,  reps:"6-8"},
+          {ex:"DB Bench", w:90,  reps:"6-8"},
+          {ex:"DB Bench", w:95,  reps:"5-6"},
+          {ex:"Back-off", w:85,  reps:"10-12"}
+        ]
+      },
+      6: {
+        A: [
+          {ex:"DB Bench", w:85,  reps:"6-8"},
+          {ex:"DB Bench", w:90,  reps:"6-8"},
+          {ex:"DB Bench", w:95,  reps:"5-7"},
+          {ex:"DB Bench", w:100, reps:"2-3"},
+          {ex:"Back-off", w:85,  reps:"10-12"}
+        ],
+        B: [
+          {ex:"DB Bench", w:85,  reps:"6-8"},
+          {ex:"DB Bench", w:90,  reps:"6-8"},
+          {ex:"DB Bench", w:95,  reps:"5-7"},
+          {ex:"Back-off", w:80,  reps:"10-12"}
+        ],
+        C: [
+          {ex:"DB Bench", w:85,  reps:"6-8"},
+          {ex:"DB Bench", w:90,  reps:"6-8"},
+          {ex:"DB Bench", w:95,  reps:"5-6"},
+          {ex:"DB Bench", w:100, reps:"1-2"},
+          {ex:"Back-off", w:85,  reps:"10-12"}
+        ]
+      },
+      7: {
+        A: [
+          {ex:"DB Bench", w:85,  reps:"6-8"},
+          {ex:"DB Bench", w:90,  reps:"6-8"},
+          {ex:"DB Bench", w:95,  reps:"5-6"},
+          {ex:"DB Bench", w:100, reps:"2-3"},
+          {ex:"Back-off", w:85,  reps:"8-10"}
+        ],
+        B: [
+          {ex:"DB Bench", w:90,  reps:"6-8"},
+          {ex:"DB Bench", w:95,  reps:"5-7"},
+          {ex:"Back-off", w:85,  reps:"10-12"}
+        ],
+        C: [
+          {ex:"DB Bench", w:85,  reps:"6-8"},
+          {ex:"DB Bench", w:90,  reps:"6-8"},
+          {ex:"DB Bench", w:95,  reps:"6"},
+          {ex:"Back-off", w:80,  reps:"12"}
+        ]
+      },
+      8: {
+        A: [
+          {ex:"DB Bench", w:85,  reps:"6-8"},
+          {ex:"DB Bench", w:90,  reps:"6-8"},
+          {ex:"DB Bench", w:95,  reps:"5-6"},
+          {ex:"DB Bench", w:100, reps:"4-5"},
+          {ex:"Back-off", w:85,  reps:"8-10"}
+        ],
+        B: [
+          {ex:"DB Bench", w:90,  reps:"6-8"},
+          {ex:"DB Bench", w:95,  reps:"6-7"},
+          {ex:"Back-off", w:85,  reps:"10-12"}
+        ],
+        C: [
+          {ex:"DB Bench", w:85,  reps:"6-8"},
+          {ex:"DB Bench", w:90,  reps:"6-8"},
+          {ex:"DB Bench", w:100, reps:"3-4"},
+          {ex:"Back-off", w:80,  reps:"12"}
+        ]
+      }
+    };
+
+    
+// Shoulder progression (safe overload based on 60x12,70x10,80x9,90x8,100x6)
+const shoulderPlan = {
+1:{A:[{ex:"DB Shoulder Press",w:60,reps:"10-12"},{ex:"DB Shoulder Press",w:70,reps:"8-10"},{ex:"DB Shoulder Press",w:80,reps:"8-9"},{ex:"DB Shoulder Press",w:90,reps:"6-8"},{ex:"Back-off",w:70,reps:"10-12"}],
+B:[{ex:"DB Shoulder Press",w:60,reps:"10-12"},{ex:"DB Shoulder Press",w:70,reps:"8-10"},{ex:"DB Shoulder Press",w:80,reps:"8-9"},{ex:"Back-off",w:70,reps:"10-12"}],
+C:[{ex:"DB Shoulder Press",w:70,reps:"8-10"},{ex:"DB Shoulder Press",w:80,reps:"8-9"},{ex:"DB Shoulder Press",w:90,reps:"6-8"},{ex:"Back-off",w:70,reps:"10-12"}]},
+2:{A:[{ex:"DB Shoulder Press",w:70,reps:"8-10"},{ex:"DB Shoulder Press",w:80,reps:"8-9"},{ex:"DB Shoulder Press",w:90,reps:"6-8"},{ex:"DB Shoulder Press",w:100,reps:"4-6"},{ex:"Back-off",w:70,reps:"10-12"}],
+B:[{ex:"DB Shoulder Press",w:60,reps:"10-12"},{ex:"DB Shoulder Press",w:70,reps:"8-10"},{ex:"DB Shoulder Press",w:80,reps:"8-9"},{ex:"Back-off",w:70,reps:"10-12"}],
+C:[{ex:"DB Shoulder Press",w:70,reps:"8-10"},{ex:"DB Shoulder Press",w:80,reps:"8-9"},{ex:"DB Shoulder Press",w:90,reps:"6-8"},{ex:"Back-off",w:70,reps:"10-12"}]},
+3:{A:[{ex:"DB Shoulder Press",w:70,reps:"8-10"},{ex:"DB Shoulder Press",w:80,reps:"8-9"},{ex:"DB Shoulder Press",w:90,reps:"6-8"},{ex:"DB Shoulder Press",w:100,reps:"5-6"},{ex:"Back-off",w:75,reps:"10-12"}],
+B:[{ex:"DB Shoulder Press",w:70,reps:"8-10"},{ex:"DB Shoulder Press",w:80,reps:"8-9"},{ex:"DB Shoulder Press",w:90,reps:"6-8"},{ex:"Back-off",w:75,reps:"10-12"}],
+C:[{ex:"DB Shoulder Press",w:80,reps:"8-9"},{ex:"DB Shoulder Press",w:90,reps:"6-8"},{ex:"DB Shoulder Press",w:100,reps:"5-6"},{ex:"Back-off",w:75,reps:"10-12"}]},
+4:{A:[{ex:"DB Shoulder Press",w:60,reps:"10-12"},{ex:"DB Shoulder Press",w:70,reps:"10-12"},{ex:"DB Shoulder Press",w:80,reps:"8-10"},{ex:"Back-off",w:60,reps:"12"}],
+B:[{ex:"DB Shoulder Press",w:60,reps:"10-12"},{ex:"DB Shoulder Press",w:70,reps:"10-12"},{ex:"Back-off",w:60,reps:"12"}],
+C:[{ex:"DB Shoulder Press",w:70,reps:"10-12"},{ex:"DB Shoulder Press",w:80,reps:"8-10"},{ex:"Back-off",w:60,reps:"12"}]},
+5:{A:[{ex:"DB Shoulder Press",w:70,reps:"8-10"},{ex:"DB Shoulder Press",w:80,reps:"8-9"},{ex:"DB Shoulder Press",w:90,reps:"6-8"},{ex:"DB Shoulder Press",w:100,reps:"6-7"},{ex:"Back-off",w:75,reps:"10-12"}]},
+6:{A:[{ex:"DB Shoulder Press",w:70,reps:"8-10"},{ex:"DB Shoulder Press",w:80,reps:"8-9"},{ex:"DB Shoulder Press",w:90,reps:"6-8"},{ex:"DB Shoulder Press",w:100,reps:"7-8"},{ex:"Back-off",w:75,reps:"10-12"}]},
+7:{A:[{ex:"DB Shoulder Press",w:80,reps:"8-9"},{ex:"DB Shoulder Press",w:90,reps:"6-8"},{ex:"DB Shoulder Press",w:100,reps:"8-9"},{ex:"Back-off",w:80,reps:"10"}]},
+8:{A:[{ex:"DB Shoulder Press",w:80,reps:"8-9"},{ex:"DB Shoulder Press",w:90,reps:"6-8"},{ex:"DB Shoulder Press",w:100,reps:"9-10"},{ex:"Back-off",w:80,reps:"10"}]}
+};
+
+// ── CONSTANTS & STATE ─────────────────────────────────────────────────────
+    const BENCH_PREFIX = "dbbench_v2_"; const SHOULDER_PREFIX="dbshoulder_v1_";
+    let currentChart = null;
+
+    // ── SELECTS ───────────────────────────────────────────────────────────────
+    const weekSelect = document.getElementById("weekSelect");
+    const daySelect  = document.getElementById("daySelect");
+
+    for (let i = 1; i <= 8; i++) {
+      const opt = document.createElement("option");
+      opt.value = i;
+      opt.textContent = `Week ${i}`;
+      weekSelect.appendChild(opt);
+    }
+
+    // ── HELPERS ───────────────────────────────────────────────────────────────
+    function sessionKey(week, day) {
+      const mode = document.getElementById("exerciseSelect")?.value || "bench";
+const prefix = mode==="shoulder" ? SHOULDER_PREFIX : BENCH_PREFIX;
+return `${prefix}w${week}d${day}`;
+    }
+
+    // ── BUILD SET BLOCK ───────────────────────────────────────────────────────
+    function buildSetBlock(set, idx) {
+      const div = document.createElement("div");
+      div.className = "set";
+      div.innerHTML = `
+        <div class="set-head">
+          <div>
+            <div class="set-title">${set.ex} — ${set.w} lb</div>
+            <div class="small">Target: ${set.reps}</div>
+          </div>
+          <div class="small">Set ${idx + 1}</div>
+        </div>
+        <div class="checks">
+          <label class="chk">
+            <input type="checkbox" class="done-check">
+            <span>Done</span>
+          </label>
+          <label class="chk">
+            <span class="small" style="margin-right:6px;">Reps:</span>
+            <input type="text" class="reps-input" placeholder="e.g. 6" style="width:70px;">
+          </label>
+        </div>
+      `;
+
+      const chk    = div.querySelector(".done-check");
+      const repsIn = div.querySelector(".reps-input");
+
+      chk.addEventListener("change", () => {
+        chk.parentElement.classList.toggle("done", chk.checked);
+        updateKPIs();
+      });
+      repsIn.addEventListener("input", updateKPIs);
+
+      return div;
+    }
+
+    // ── LOAD SESSION ──────────────────────────────────────────────────────────
+    function loadSession() {
+      const week = parseInt(weekSelect.value);
+      const day  = daySelect.value;
+      const mode=document.getElementById("exerciseSelect")?.value || "bench";
+const activePlan = mode==="shoulder" ? shoulderPlan : plan;
+const sets = (activePlan[week] && activePlan[week][day]) ? activePlan[week][day] : [];
+
+      document.getElementById("sessionTitle").textContent   = `Week ${week} - Day ${day}`;
+      document.getElementById("sessionIdLabel").textContent = `Key: ${sessionKey(week, day)}`;
+
+      const container = document.getElementById("setsContainer");
+      container.innerHTML = "";
+      sets.forEach((s, i) => container.appendChild(buildSetBlock(s, i)));
+
+      const saved = localStorage.getItem(sessionKey(week, day));
+      if (saved) {
+        const d = JSON.parse(saved);
+        document.querySelectorAll(".done-check").forEach((ch, i) => {
+          ch.checked = !!d.done?.[i];
+          ch.parentElement.classList.toggle("done", ch.checked);
+        });
+        document.querySelectorAll(".reps-input").forEach((inp, i) => {
+          inp.value = d.reps?.[i] || "";
+        });
+        document.getElementById("notes").value = d.notes || "";
+      } else {
+        document.getElementById("notes").value = "";
+      }
+
+      updateKPIs();
+    }
+
+    // ── SAVE SESSION ──────────────────────────────────────────────────────────
+    function saveSession() {
+      const week  = parseInt(weekSelect.value);
+      const day   = daySelect.value;
+      const done  = Array.from(document.querySelectorAll(".done-check")).map(c => c.checked);
+      const reps  = Array.from(document.querySelectorAll(".reps-input")).map(i => i.value.trim());
+      const data  = {
+        week,
+        day,
+        done,
+        reps,
+        notes: document.getElementById("notes").value.trim(),
+        date:  new Date().toISOString()
+      };
+      localStorage.setItem(sessionKey(week, day), JSON.stringify(data));
+      alert("✅ Session Saved!");
+      renderHistory();
+    }
+
+    // ── RESET SESSION ─────────────────────────────────────────────────────────
+    function resetSession() {
+      if (confirm("Reset this session?")) {
+        localStorage.removeItem(sessionKey(parseInt(weekSelect.value), daySelect.value));
+        loadSession();
+      }
+    }
+
+    // ── UPDATE KPIs ───────────────────────────────────────────────────────────
+    function updateKPIs() {
+      const checks = document.querySelectorAll(".done-check");
+      const done   = Array.from(checks).filter(c => c.checked).length;
+      const total  = checks.length;
+
+      let vol = 0;
+      document.querySelectorAll(".set").forEach(s => {
+        const titleText = s.querySelector(".set-title").textContent;
+        const wMatch    = titleText.match(/(\d+)\s*lb/);
+        const w         = wMatch ? parseInt(wMatch[1]) : 0;
+        const r         = parseInt(s.querySelector(".reps-input").value) || 0;
+        if (s.querySelector(".done-check").checked) vol += w * r;
+      });
+
+      document.getElementById("kpiDone").textContent   = done;
+      document.getElementById("kpiTotal").textContent  = total;
+      document.getElementById("kpiVolume").textContent = vol;
+    }
+
+    // ── RENDER HISTORY ────────────────────────────────────────────────────────
+    function renderHistory() {
+      const container = document.getElementById("historyList");
+      container.innerHTML = "";
+
+      const keys = Object.keys(localStorage).filter(k => k.startsWith(BENCH_PREFIX) || k.startsWith(SHOULDER_PREFIX));
+
+      if (keys.length === 0) {
+        container.innerHTML = `<p style="color:var(--muted);text-align:center;padding:40px;">No sessions saved yet.<br>Go to Tracker tab and save some sessions.</p>`;
+        return;
+      }
+
+      keys.sort().reverse().forEach(key => {
+        const d   = JSON.parse(localStorage.getItem(key));
+        const div = document.createElement("div");
+        div.className = "history-item";
+        const dateStr     = d.date ? new Date(d.date).toLocaleDateString() : "—";
+        const doneCount   = Array.isArray(d.done) ? d.done.filter(Boolean).length : 0;
+        const totalCount  = Array.isArray(d.done) ? d.done.length : 0;
+        div.innerHTML = `
+          <strong>Week ${d.week} - Day ${d.day}</strong><br>
+          <small>${dateStr}</small><br>
+          <small>${doneCount}/${totalCount} sets completed</small>
+          ${d.notes ? `<p style="margin:6px 0 0;font-size:13px;color:var(--muted);">${d.notes}</p>` : ""}
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    // ── RENDER CHART ──────────────────────────────────────────────────────────
+    function renderChart() {
+      const ctx = document.getElementById("progressChart").getContext("2d");
+      if (currentChart) currentChart.destroy();
+
+      const entries = [];
+
+      Object.keys(localStorage)
+        .filter(k => k.startsWith(BENCH_PREFIX) || k.startsWith(SHOULDER_PREFIX))
+        .forEach(key => {
+          const d = JSON.parse(localStorage.getItem(key));
+          if (!d.date) return;
+          // Find highest weight set in session and its reps
+          const activePlan = key.startsWith(SHOULDER_PREFIX) ? shoulderPlan : plan;
+          const sets = (activePlan[d.week] && activePlan[d.week][d.day]) ? activePlan[d.week][d.day] : [];
+          let maxW = 0, maxReps = 0;
+          sets.forEach((s, i) => {
+            const r = parseInt(d.reps?.[i]) || 0;
+            if (s.w >= maxW && r > 0) { maxW = s.w; maxReps = r; }
+          });
+          if (maxReps > 0) {
+            entries.push({ label: `W${d.week}${d.day}`, w: maxW, reps: maxReps, date: d.date });
+          }
+        });
+
+      entries.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      const labels     = entries.map(e => e.label);
+      const dataPoints = entries.map(e => e.reps);
+      const weights    = entries.map(e => e.w);
+
+      currentChart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: labels.length ? labels : ["W1A","W1B","W1C"],
+          datasets: [{
+            label: "Top-Set Reps",
+            data: dataPoints.length ? dataPoints : [0, 0, 0],
+            borderColor: "#4da3ff",
+            backgroundColor: "rgba(77,163,255,0.08)",
+            tension: 0.3,
+            borderWidth: 3,
+            pointRadius: 5,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: (ctx) => {
+                  const w = weights[ctx.dataIndex] || "?";
+                  return `${ctx.raw} reps @ ${w} lb`;
+                }
+              }
+            }
+          },
+          scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
+      });
+    }
+
+    // ── TAB SWITCHING ─────────────────────────────────────────────────────────
+    document.querySelectorAll(".tab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+        tab.classList.add("active");
+        document.querySelectorAll(".tab-content").forEach(c => c.style.display = "none");
+        document.getElementById(tab.dataset.tab + "Tab").style.display = "block";
+        if (tab.dataset.tab === "history") renderHistory();
+        if (tab.dataset.tab === "chart")   renderChart();
+      });
+    });
+
+    // ── EVENT BINDINGS ────────────────────────────────────────────────────────
+    document.getElementById("loadBtn").onclick      = loadSession;
+    document.getElementById("newSessionBtn").onclick = () => {
+      document.getElementById("notes").value = "";
+      loadSession();
+    };
+    document.getElementById("saveBtn").onclick  = saveSession;
+    document.getElementById("resetBtn").onclick = resetSession;
+    weekSelect.onchange = loadSession; document.getElementById("exerciseSelect").onchange = loadSession;
+    daySelect.onchange  = loadSession;
+
+    // ── INIT ──────────────────────────────────────────────────────────────────
+    loadSession();
+  </script>
+</body>
+</html>
